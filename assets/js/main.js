@@ -66,7 +66,9 @@ if (contactForm && formNote) {
     });
 }
 
-document.querySelectorAll(".project-visual video").forEach((video) => {
+const projectVideos = document.querySelectorAll(".project-visual video");
+
+projectVideos.forEach((video) => {
     const setVideoOrientation = () => {
         if (!video.videoWidth || !video.videoHeight) {
             return;
@@ -78,6 +80,14 @@ document.querySelectorAll(".project-visual video").forEach((video) => {
     };
 
     video.addEventListener("loadedmetadata", setVideoOrientation);
+    video.addEventListener("play", () => {
+        projectVideos.forEach((otherVideo) => {
+            if (otherVideo !== video) {
+                otherVideo.pause();
+            }
+        });
+    });
+
     if (video.readyState >= 1) {
         setVideoOrientation();
     }
