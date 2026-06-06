@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="刘立伟的个人工作求职网站，展示网页设计、新媒体内容制作与前端静态页面作品。">
     <title>个人简介求职网站</title>
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css?v=20260606-feedstack-v13">
 </head>
 
 <body>
@@ -237,8 +237,22 @@
             </div>
             <div class="project-grid">
                 <article class="project-card">
-                    <div class="project-visual">
-                        <video src="assets/video/video-1.mp4" controls preload="metadata"></video>
+                    <div class="project-visual feed-stack-player" data-feed-switcher>
+                        <div class="feed-scene">
+                            <button class="feed-card is-active" type="button" aria-label="播放源码信息流视频" aria-pressed="true" data-feed-card data-start="0">
+                                <video src="assets/video/video-1.mp4" playsinline preload="metadata" disablepictureinpicture disableremoteplayback controlslist="nodownload noplaybackrate noremoteplayback nofullscreen"></video>
+                            </button>
+                            <button class="feed-card is-next" type="button" aria-label="播放信息流剪辑视频一" aria-pressed="false" data-feed-card data-start="0">
+                                <video src="assets/video/feed-user-1.mp4" playsinline preload="metadata" disablepictureinpicture disableremoteplayback controlslist="nodownload noplaybackrate noremoteplayback nofullscreen"></video>
+                            </button>
+                            <button class="feed-card is-prev" type="button" aria-label="播放信息流剪辑视频三" aria-pressed="false" data-feed-card data-start="0">
+                                <video src="assets/video/feed-gaokao-3.mp4" playsinline preload="metadata" disablepictureinpicture disableremoteplayback controlslist="nodownload noplaybackrate noremoteplayback nofullscreen"></video>
+                            </button>
+                        </div>
+                        <div class="feed-lightbox" data-feed-lightbox hidden>
+                            <button class="feed-lightbox-close" type="button" aria-label="关闭视频" data-feed-lightbox-close>×</button>
+                            <video controls playsinline disablepictureinpicture disableremoteplayback controlslist="nodownload noplaybackrate noremoteplayback nofullscreen" data-feed-lightbox-video></video>
+                        </div>
                     </div>
                     <div class="project-info">
                         <div class="project-kicker">
@@ -254,8 +268,19 @@
                     </div>
                 </article>
                 <article class="project-card">
-                    <div class="project-visual">
-                        <video src="assets/video/video-2.mp4" controls preload="metadata"></video>
+                    <div class="project-visual feed-stack-player" data-feed-switcher>
+                        <div class="feed-scene">
+                            <button class="feed-card is-active" type="button" aria-label="播放源码端内广告视频" aria-pressed="true" data-feed-card data-start="0">
+                                <video src="assets/video/video-2.mp4" playsinline preload="metadata" disablepictureinpicture disableremoteplayback controlslist="nodownload noplaybackrate noremoteplayback nofullscreen"></video>
+                            </button>
+                            <button class="feed-card is-next" type="button" aria-label="播放新增端内广告视频" aria-pressed="false" data-feed-card data-start="0">
+                                <video src="assets/video/ad-user-2.mp4" playsinline preload="metadata" disablepictureinpicture disableremoteplayback controlslist="nodownload noplaybackrate noremoteplayback nofullscreen"></video>
+                            </button>
+                        </div>
+                        <div class="feed-lightbox" data-feed-lightbox hidden>
+                            <button class="feed-lightbox-close" type="button" aria-label="关闭视频" data-feed-lightbox-close>×</button>
+                            <video controls playsinline disablepictureinpicture disableremoteplayback controlslist="nodownload noplaybackrate noremoteplayback nofullscreen" data-feed-lightbox-video></video>
+                        </div>
                     </div>
                     <div class="project-info">
                         <div class="project-kicker">
@@ -272,7 +297,7 @@
                 </article>
                 <article class="project-card">
                     <div class="project-visual">
-                        <video src="assets/video/video-3.mp4" controls preload="metadata"></video>
+                        <video src="assets/video/video-3.mp4" autoplay muted loop playsinline preload="metadata" disablepictureinpicture disableremoteplayback controlslist="nodownload noplaybackrate noremoteplayback nofullscreen" data-standalone-video></video>
                     </div>
                     <div class="project-info">
                         <div class="project-kicker">
@@ -340,7 +365,7 @@ https://github.com/6I0IM77/job-portfolio-site</em>
         <a href="#top" data-scroll-top>返回顶部</a>
     </footer>
 
-    <script src="assets/js/main.js"></script>
+    <script src="assets/js/main.js?v=20260606-feedstack-v13"></script>
 </body>
 
 </html>

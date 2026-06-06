@@ -66,7 +66,379 @@ if (contactForm && formNote) {
     });
 }
 
-const projectVideos = document.querySelectorAll(".project-visual video");
+const feedSwitchers = document.querySelectorAll("[data-feed-switcher]");
+const projectVideos = document.querySelectorAll(".project-visual > video, [data-feed-card] video");
+const standaloneVideos = document.querySelectorAll("[data-standalone-video]");
+const feedControllers = [];
+let activeFeedController = 0;
+
+const disableNativeVideoOverlays = (video) => {
+    video.disablePictureInPicture = true;
+    video.disableRemotePlayback = true;
+    video.setAttribute("disablepictureinpicture", "");
+    video.setAttribute("disableremoteplayback", "");
+    video.setAttribute("controlsList", "nodownload noplaybackrate noremoteplayback nofullscreen");
+};
+
+document.querySelectorAll("video").forEach(disableNativeVideoOverlays);
+
+const playStandalonePreviews = () => {
+    standaloneVideos.forEach((video) => {
+        video.muted = true;
+        video.defaultMuted = true;
+        video.volume = 0;
+        video.loop = true;
+        video.play().catch(() => {});
+    });
+};
+
+const pauseStandalonePreviews = () => {
+    standaloneVideos.forEach((video) => video.pause());
+};
+
+const activateFeedController = (index, options = {}) => {
+    if (!feedControllers.length) {
+        return;
+    }
+
+    activeFeedController = (index + feedControllers.length) % feedControllers.length;
+    feedControllers[activeFeedController].start(options);
+};
+
+feedSwitchers.forEach((switcher, switcherIndex) => {
+    const cards = [...switcher.querySelectorAll("[data-feed-card]")];
+    let activeIndex = 0;
+    let hasStarted = false;
+    let timerId;
+    let isControllerActive = false;
+    let lastWheelAt = 0;
+    let lastSwipeAt = 0;
+    let touchStartX = 0;
+      let touchStartY = 0;
+      let pointerStartX = 0;
+      let pointerStartY = 0;
+      const lightbox = switcher.querySelector("[data-feed-lightbox]");
+      const lightboxVideo = switcher.querySelector("[data-feed-lightbox-video]");
+      const lightboxClose = switcher.querySelector("[data-feed-lightbox-close]");
+
+    const seekVideo = (video, startTime) => {
+        const seek = () => {
+            const safeStart = Number.isFinite(video.duration)
+                ? Math.min(startTime, Math.max(video.duration - 0.4, 0))
+                : startTime;
+            video.currentTime = safeStart;
+        };
+
+        if (video.readyState >= 1) {
+            seek();
+        } else {
+            video.addEventListener("loadedmetadata", seek, { once: true });
+        }
+    };
+
+      const applyCardState = () => {
+          cards.forEach((card, index) => {
+              const offset = (index - activeIndex + cards.length) % cards.length;
+              card.classList.toggle("is-active", offset === 0);
+              card.classList.toggle("is-next", offset === 1);
+              card.classList.toggle("is-prev", cards.length > 2 && offset === cards.length - 1);
+              card.setAttribute("aria-pressed", String(offset === 0));
+            });
+        };
+
+      const openFullscreen = (card, video) => {
+          if (card.requestFullscreen) {
+              card.requestFullscreen().catch(() => {});
+              return;
+          }
+
+          if (card.webkitRequestFullscreen) {
+              card.webkitRequestFullscreen();
+              return;
+          }
+
+          if (video.webkitEnterFullscreen) {
+              video.webkitEnterFullscreen();
+          }
+      };
+  
+      const playActiveCard = ({ withSound = false, fullscreen = false } = {}) => {
+          cards.forEach((card, index) => {
+              const video = card.querySelector("video");
+              const startTime = Number(card.dataset.start) || 0;
+
+            if (!video) {
+                return;
+            }
+
+            if (index !== activeIndex) {
+                video.pause();
+                seekVideo(video, startTime);
+                  return;
+              }
+  
+              video.muted = !withSound;
+              video.volume = withSound ? 1 : 0;
+              seekVideo(video, startTime);
+
+              if (fullscreen) {
+                  openFullscreen(card, video);
+              }
+  
+              const playVideo = () => {
+                  if (!isControllerActive || document.body.classList.contains("feed-viewer-open")) {
+                      return;
+                  }
+
+                  video.play().catch(() => {});
+            };
+
+              if (video.readyState >= 1) {
+                  if (withSound) {
+                      playVideo();
+                  } else {
+                      window.setTimeout(playVideo, 80);
+                  }
+              } else {
+                  video.addEventListener("loadedmetadata", playVideo, { once: true });
+              }
+          });
+      };
+  
+      const switchTo = (index, options) => {
+          activeIndex = (index + cards.length) % cards.length;
+          applyCardState();
+          playActiveCard(options);
+      };
+
+    const switchBy = (step) => {
+        if (!isControllerActive) {
+            activateFeedController(switcherIndex);
+        }
+
+        switchTo(activeIndex + step);
+        restartTimer();
+    };
+
+      const restartTimer = () => {
+          window.clearInterval(timerId);
+          if (!isControllerActive) {
+              return;
+          }
+
+          timerId = window.setInterval(() => {
+              switchTo(activeIndex + 1);
+          }, 6200);
+      };
+
+      const closeViewer = () => {
+          if (!lightbox || !lightboxVideo) {
+              return;
+          }
+
+          lightboxVideo.pause();
+          lightboxVideo.removeAttribute("src");
+          lightboxVideo.load();
+          lightbox.hidden = true;
+          document.body.classList.remove("feed-viewer-open");
+          feedControllers.forEach((controller) => controller.start());
+          playStandalonePreviews();
+      };
+
+      const openViewer = (card) => {
+          if (!lightbox || !lightboxVideo) {
+              return;
+          }
+
+          const sourceVideo = card.querySelector("video");
+
+          if (!sourceVideo) {
+              return;
+          }
+
+          feedControllers.forEach((controller) => controller.stop());
+          projectVideos.forEach((video) => video.pause());
+          pauseStandalonePreviews();
+          document.body.appendChild(lightbox);
+          disableNativeVideoOverlays(lightboxVideo);
+          lightboxVideo.src = sourceVideo.currentSrc || sourceVideo.getAttribute("src");
+          lightboxVideo.muted = false;
+          lightboxVideo.volume = 1;
+          lightboxVideo.load();
+          lightbox.hidden = false;
+          document.body.classList.add("feed-viewer-open");
+          lightboxVideo.play().catch(() => {});
+      };
+
+    const handleSwipe = (deltaX, deltaY) => {
+        const now = Date.now();
+
+        if (now - lastSwipeAt < 420) {
+            return;
+        }
+
+        if (Math.abs(deltaX) > 42 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+            lastSwipeAt = now;
+            switchBy(deltaX < 0 ? 1 : -1);
+        }
+    };
+
+        cards.forEach((card, index) => {
+            card.addEventListener("click", () => {
+                activateFeedController(switcherIndex);
+                window.clearInterval(timerId);
+                switchTo(index);
+                openViewer(card);
+          });
+      });
+
+      lightboxClose?.addEventListener("click", closeViewer);
+      lightbox?.addEventListener("click", (event) => {
+          if (event.target === lightbox) {
+              closeViewer();
+          }
+      });
+
+      document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && lightbox && !lightbox.hidden) {
+              closeViewer();
+          }
+      });
+
+    switcher.addEventListener("wheel", (event) => {
+        const now = Date.now();
+        const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+
+        if (Math.abs(delta) < 18 || now - lastWheelAt < 720) {
+            return;
+        }
+
+        event.preventDefault();
+        lastWheelAt = now;
+        switchBy(delta > 0 ? 1 : -1);
+    }, { passive: false });
+
+    switcher.addEventListener("touchstart", (event) => {
+        const touch = event.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+    }, { passive: true });
+
+    switcher.addEventListener("touchend", (event) => {
+        const touch = event.changedTouches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+
+        handleSwipe(deltaX, deltaY);
+    });
+
+    switcher.addEventListener("pointerdown", (event) => {
+        pointerStartX = event.clientX;
+        pointerStartY = event.clientY;
+    });
+
+    switcher.addEventListener("pointerup", (event) => {
+        handleSwipe(event.clientX - pointerStartX, event.clientY - pointerStartY);
+    });
+
+    switcher.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowRight") {
+            event.preventDefault();
+            switchBy(1);
+        }
+
+        if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            switchBy(-1);
+        }
+    });
+
+    const stop = () => {
+        isControllerActive = false;
+        window.clearInterval(timerId);
+        cards.forEach((card) => {
+            const video = card.querySelector("video");
+            const startTime = Number(card.dataset.start) || 0;
+
+            if (video) {
+                video.pause();
+                seekVideo(video, startTime);
+            }
+        });
+    };
+
+    const start = ({ advance = false } = {}) => {
+        isControllerActive = true;
+
+        if (!hasStarted) {
+            activeIndex = 0;
+            hasStarted = true;
+        } else if (advance) {
+            activeIndex = (activeIndex + 1) % cards.length;
+        }
+
+        applyCardState();
+        playActiveCard();
+        restartTimer();
+    };
+
+    applyCardState();
+    stop();
+    feedControllers.push({ start, stop });
+});
+
+feedControllers.forEach((controller) => controller.start());
+playStandalonePreviews();
+
+const standaloneViewer = document.createElement("div");
+standaloneViewer.className = "feed-lightbox";
+standaloneViewer.hidden = true;
+standaloneViewer.innerHTML = `
+    <button class="feed-lightbox-close" type="button" aria-label="关闭视频">×</button>
+    <video controls playsinline disablepictureinpicture disableremoteplayback controlslist="nodownload noplaybackrate noremoteplayback nofullscreen"></video>
+`;
+
+const standaloneViewerVideo = standaloneViewer.querySelector("video");
+const standaloneViewerClose = standaloneViewer.querySelector(".feed-lightbox-close");
+disableNativeVideoOverlays(standaloneViewerVideo);
+
+const closeStandaloneViewer = () => {
+    standaloneViewerVideo.pause();
+    standaloneViewerVideo.removeAttribute("src");
+    standaloneViewerVideo.load();
+    standaloneViewer.hidden = true;
+    document.body.classList.remove("feed-viewer-open");
+    feedControllers.forEach((controller) => controller.start());
+    playStandalonePreviews();
+};
+
+const openStandaloneViewer = (sourceVideo) => {
+    feedControllers.forEach((controller) => controller.stop());
+    projectVideos.forEach((video) => video.pause());
+    pauseStandalonePreviews();
+    document.body.appendChild(standaloneViewer);
+    disableNativeVideoOverlays(standaloneViewerVideo);
+    standaloneViewerVideo.src = sourceVideo.currentSrc || sourceVideo.getAttribute("src");
+    standaloneViewerVideo.muted = false;
+    standaloneViewerVideo.volume = 1;
+    standaloneViewerVideo.load();
+    standaloneViewer.hidden = false;
+    document.body.classList.add("feed-viewer-open");
+    standaloneViewerVideo.play().catch(() => {});
+};
+
+standaloneViewerClose.addEventListener("click", closeStandaloneViewer);
+standaloneViewer.addEventListener("click", (event) => {
+    if (event.target === standaloneViewer) {
+        closeStandaloneViewer();
+    }
+});
+
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !standaloneViewer.hidden) {
+        closeStandaloneViewer();
+    }
+});
 
 projectVideos.forEach((video) => {
     const setVideoOrientation = () => {
@@ -80,15 +452,37 @@ projectVideos.forEach((video) => {
     };
 
     video.addEventListener("loadedmetadata", setVideoOrientation);
-    video.addEventListener("play", () => {
-        projectVideos.forEach((otherVideo) => {
-            if (otherVideo !== video) {
-                otherVideo.pause();
-            }
+
+    if (video.matches("[data-standalone-video]")) {
+        video.addEventListener("click", (event) => {
+            event.preventDefault();
+            openStandaloneViewer(video);
         });
-    });
+    }
 
     if (video.readyState >= 1) {
         setVideoOrientation();
+    }
+});
+
+document.addEventListener("fullscreenchange", () => {
+    const fullscreenVideo = document.fullscreenElement?.matches(".project-visual > video")
+        ? document.fullscreenElement
+        : null;
+
+    if (fullscreenVideo) {
+        feedControllers.forEach((controller) => controller.stop());
+        pauseStandalonePreviews();
+        projectVideos.forEach((video) => {
+            if (video !== fullscreenVideo) {
+                video.pause();
+            }
+        });
+        return;
+    }
+
+    if (!document.body.classList.contains("feed-viewer-open")) {
+        feedControllers.forEach((controller) => controller.start());
+        playStandalonePreviews();
     }
 });
