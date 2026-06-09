@@ -74,7 +74,39 @@ let activeFeedController = 0;
 
 const getVideoSource = (video) => video?.currentSrc || video?.getAttribute("src") || video?.dataset.src || "";
 
+const getVideoFallbackSource = (video) => video?.dataset.fallbackSrc || "";
+
 const hasLoadedVideoSource = (video) => video?.dataset.videoLoaded === "true" || Boolean(video?.currentSrc || video?.getAttribute("src"));
+
+const tryVideoFallback = (video) => {
+    const fallbackSource = getVideoFallbackSource(video);
+
+    if (!video || !fallbackSource || video.dataset.fallbackTried === "true") {
+        return false;
+    }
+
+    if (video.getAttribute("src") === fallbackSource) {
+        return false;
+    }
+
+    video.dataset.fallbackTried = "true";
+    video.setAttribute("src", fallbackSource);
+    video.load();
+    return true;
+};
+
+const attachVideoFallback = (video) => {
+    if (!video || video.dataset.fallbackAttached === "true") {
+        return;
+    }
+
+    video.dataset.fallbackAttached = "true";
+    video.addEventListener("error", () => {
+        if (tryVideoFallback(video)) {
+            video.play().catch(() => {});
+        }
+    });
+};
 
 const loadVideoSource = (video) => {
     const source = getVideoSource(video);
@@ -84,6 +116,7 @@ const loadVideoSource = (video) => {
     }
 
     if (!video.getAttribute("src")) {
+        delete video.dataset.fallbackTried;
         video.setAttribute("src", source);
         video.load();
     }
@@ -101,6 +134,7 @@ const disableNativeVideoOverlays = (video) => {
 };
 
 document.querySelectorAll("video").forEach(disableNativeVideoOverlays);
+document.querySelectorAll("video").forEach(attachVideoFallback);
 
 const playStandalonePreviews = () => {
     standaloneVideos.forEach((video) => {
@@ -290,6 +324,7 @@ feedSwitchers.forEach((switcher, switcherIndex) => {
           }
 
           const source = getVideoSource(sourceVideo);
+          const fallbackSource = getVideoFallbackSource(sourceVideo);
 
           if (!source) {
               return;
@@ -300,6 +335,9 @@ feedSwitchers.forEach((switcher, switcherIndex) => {
           pauseStandalonePreviews();
           document.body.appendChild(lightbox);
           disableNativeVideoOverlays(lightboxVideo);
+          attachVideoFallback(lightboxVideo);
+          delete lightboxVideo.dataset.fallbackTried;
+          lightboxVideo.dataset.fallbackSrc = fallbackSource;
           lightboxVideo.src = source;
           lightboxVideo.muted = false;
           lightboxVideo.volume = 1;
@@ -455,6 +493,7 @@ const closeStandaloneViewer = () => {
 
 const openStandaloneViewer = (sourceVideo) => {
     const source = getVideoSource(sourceVideo);
+    const fallbackSource = getVideoFallbackSource(sourceVideo);
 
     if (!source) {
         return;
@@ -465,6 +504,9 @@ const openStandaloneViewer = (sourceVideo) => {
     pauseStandalonePreviews();
     document.body.appendChild(standaloneViewer);
     disableNativeVideoOverlays(standaloneViewerVideo);
+    attachVideoFallback(standaloneViewerVideo);
+    delete standaloneViewerVideo.dataset.fallbackTried;
+    standaloneViewerVideo.dataset.fallbackSrc = fallbackSource;
     standaloneViewerVideo.src = source;
     standaloneViewerVideo.muted = false;
     standaloneViewerVideo.volume = 1;
