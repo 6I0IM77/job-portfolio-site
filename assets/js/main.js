@@ -67,10 +67,30 @@ if (contactForm && formNote) {
 }
 
 const feedSwitchers = document.querySelectorAll("[data-feed-switcher]");
-const projectVideos = document.querySelectorAll(".project-visual > video, [data-feed-card] video");
+const projectVideos = document.querySelectorAll("[data-feed-card] video, [data-standalone-video]");
 const standaloneVideos = document.querySelectorAll("[data-standalone-video]");
 const feedControllers = [];
 let activeFeedController = 0;
+
+const getVideoSource = (video) => video?.currentSrc || video?.getAttribute("src") || video?.dataset.src || "";
+
+const hasLoadedVideoSource = (video) => video?.dataset.videoLoaded === "true" || Boolean(video?.currentSrc || video?.getAttribute("src"));
+
+const loadVideoSource = (video) => {
+    const source = getVideoSource(video);
+
+    if (!video || !source) {
+        return "";
+    }
+
+    if (!video.getAttribute("src")) {
+        video.setAttribute("src", source);
+        video.load();
+    }
+
+    video.dataset.videoLoaded = "true";
+    return source;
+};
 
 const disableNativeVideoOverlays = (video) => {
     video.disablePictureInPicture = true;
@@ -84,6 +104,10 @@ document.querySelectorAll("video").forEach(disableNativeVideoOverlays);
 
 const playStandalonePreviews = () => {
     standaloneVideos.forEach((video) => {
+        if (!hasLoadedVideoSource(video)) {
+            return;
+        }
+
         video.muted = true;
         video.defaultMuted = true;
         video.volume = 0;
@@ -172,10 +196,19 @@ feedSwitchers.forEach((switcher, switcherIndex) => {
             }
 
             if (index !== activeIndex) {
-                video.pause();
-                seekVideo(video, startTime);
+                if (hasLoadedVideoSource(video)) {
+                    video.pause();
+                    seekVideo(video, startTime);
+                }
+
                   return;
               }
+
+              if (!hasLoadedVideoSource(video) && !withSound && !fullscreen) {
+                  return;
+              }
+
+              loadVideoSource(video);
   
               video.muted = !withSound;
               video.volume = withSound ? 1 : 0;
@@ -256,12 +289,18 @@ feedSwitchers.forEach((switcher, switcherIndex) => {
               return;
           }
 
+          const source = getVideoSource(sourceVideo);
+
+          if (!source) {
+              return;
+          }
+
           feedControllers.forEach((controller) => controller.stop());
           projectVideos.forEach((video) => video.pause());
           pauseStandalonePreviews();
           document.body.appendChild(lightbox);
           disableNativeVideoOverlays(lightboxVideo);
-          lightboxVideo.src = sourceVideo.currentSrc || sourceVideo.getAttribute("src");
+          lightboxVideo.src = source;
           lightboxVideo.muted = false;
           lightboxVideo.volume = 1;
           lightboxVideo.load();
@@ -361,8 +400,10 @@ feedSwitchers.forEach((switcher, switcherIndex) => {
             const startTime = Number(card.dataset.start) || 0;
 
             if (video) {
-                video.pause();
-                seekVideo(video, startTime);
+                if (hasLoadedVideoSource(video)) {
+                    video.pause();
+                    seekVideo(video, startTime);
+                }
             }
         });
     };
@@ -413,12 +454,18 @@ const closeStandaloneViewer = () => {
 };
 
 const openStandaloneViewer = (sourceVideo) => {
+    const source = getVideoSource(sourceVideo);
+
+    if (!source) {
+        return;
+    }
+
     feedControllers.forEach((controller) => controller.stop());
     projectVideos.forEach((video) => video.pause());
     pauseStandalonePreviews();
     document.body.appendChild(standaloneViewer);
     disableNativeVideoOverlays(standaloneViewerVideo);
-    standaloneViewerVideo.src = sourceVideo.currentSrc || sourceVideo.getAttribute("src");
+    standaloneViewerVideo.src = source;
     standaloneViewerVideo.muted = false;
     standaloneViewerVideo.volume = 1;
     standaloneViewerVideo.load();
@@ -454,7 +501,9 @@ projectVideos.forEach((video) => {
     video.addEventListener("loadedmetadata", setVideoOrientation);
 
     if (video.matches("[data-standalone-video]")) {
-        video.addEventListener("click", (event) => {
+        const standaloneTrigger = video.closest("[data-standalone-trigger]") || video;
+
+        standaloneTrigger.addEventListener("click", (event) => {
             event.preventDefault();
             openStandaloneViewer(video);
         });
