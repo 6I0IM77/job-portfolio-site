@@ -145,6 +145,16 @@ const loadVideoSource = (video) => {
     return source;
 };
 
+const loadPreviewFrame = (video) => {
+    if (!video || video.dataset.previewLoaded === "true") {
+        return;
+    }
+
+    video.preload = "metadata";
+    loadVideoSource(video);
+    video.dataset.previewLoaded = "true";
+};
+
 const disableNativeVideoOverlays = (video) => {
     video.disablePictureInPicture = true;
     video.disableRemotePlayback = true;
@@ -155,6 +165,24 @@ const disableNativeVideoOverlays = (video) => {
 
 document.querySelectorAll("video").forEach(disableNativeVideoOverlays);
 document.querySelectorAll("video").forEach(attachVideoFallback);
+
+if ("IntersectionObserver" in window) {
+    const previewObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (!entry.isIntersecting) {
+                return;
+            }
+
+            const video = entry.target;
+            loadPreviewFrame(video);
+            previewObserver.unobserve(video);
+        });
+    }, { rootMargin: "360px 0px" });
+
+    projectVideos.forEach((video) => previewObserver.observe(video));
+} else {
+    projectVideos.forEach(loadPreviewFrame);
+}
 
 const playStandalonePreviews = () => {
     standaloneVideos.forEach((video) => {
