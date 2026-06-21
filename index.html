@@ -8,7 +8,8 @@
     <title>个人简介求职网站</title>
     <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260609-cdn-video-v2">
+    <link rel="preload" as="image" href="assets/img/hero-workspace.png" fetchpriority="high">
+    <link rel="stylesheet" href="assets/css/style.css?v=20260621-fast-cache-v3">
 </head>
 
 <body>
@@ -62,7 +63,7 @@
             </ul>
             <a class="brand" href="#home" aria-label="返回首页">
                 <span>刘立伟</span>
-                <img class="brand-avatar" src="assets/img/avatar.jpg" alt="刘立伟头像">
+                <img class="brand-avatar" src="assets/img/avatar.jpg" alt="刘立伟头像" loading="eager" decoding="async">
             </a>
         </nav>
     </header>
@@ -82,14 +83,14 @@
                     <div class="wechat-hover">
                         <button class="button secondary" type="button" aria-describedby="wechatTip">添加微信</button>
                         <div class="wechat-popover" id="wechatTip" role="tooltip">
-                            <img src="assets/img/wechat-qr.png" alt="微信添加好友二维码">
+                            <img src="assets/img/wechat-qr.png" alt="微信添加好友二维码" loading="lazy" decoding="async">
                             <span>扫码添加微信</span>
                         </div>
                     </div>
                 </div>
             </div>
             <figure class="hero-media" aria-label="网页设计工作台">
-                <img src="assets/img/hero-workspace.png" alt="网页设计工作台，包含电脑、作品文档和创作工具">
+                <img src="assets/img/hero-workspace.png" alt="网页设计工作台，包含电脑、作品文档和创作工具" loading="eager" decoding="async" fetchpriority="high">
             </figure>
         </section>
 
@@ -133,7 +134,7 @@
             </div>
             <article class="education-card">
                 <div class="school-logo-wrap">
-                    <img src="assets/img/whhxit-logo.jpg" alt="武汉华夏理工学院校标">
+                    <img src="assets/img/whhxit-logo.jpg" alt="武汉华夏理工学院校标" loading="lazy" decoding="async">
                 </div>
                 <div class="school-info">
                     <p class="school-label">统招全日制本科毕业 / 2026届</p>
@@ -369,7 +370,7 @@ https://github.com/6I0IM77/job-portfolio-site</em>
         <a href="#top" data-scroll-top>返回顶部</a>
     </footer>
 
-    <script src="assets/js/main.js?v=20260609-cdn-video-v2"></script>
+    <script src="assets/js/main.js?v=20260621-fast-cache-v3"></script>
 </body>
 
 </html>
