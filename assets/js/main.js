@@ -101,7 +101,17 @@ const attachVideoFallback = (video) => {
     }
 
     video.dataset.fallbackAttached = "true";
+    const clearFallbackTimer = () => {
+        if (video.dataset.fallbackTimer) {
+            window.clearTimeout(Number(video.dataset.fallbackTimer));
+            delete video.dataset.fallbackTimer;
+        }
+    };
+
+    video.addEventListener("loadedmetadata", clearFallbackTimer);
+    video.addEventListener("canplay", clearFallbackTimer);
     video.addEventListener("error", () => {
+        clearFallbackTimer();
         if (tryVideoFallback(video)) {
             video.play().catch(() => {});
         }
@@ -119,6 +129,16 @@ const loadVideoSource = (video) => {
         delete video.dataset.fallbackTried;
         video.setAttribute("src", source);
         video.load();
+
+        if (getVideoFallbackSource(video)) {
+            const fallbackTimer = window.setTimeout(() => {
+                if (video.readyState < 1 && tryVideoFallback(video)) {
+                    video.play().catch(() => {});
+                }
+            }, 4500);
+
+            video.dataset.fallbackTimer = String(fallbackTimer);
+        }
     }
 
     video.dataset.videoLoaded = "true";
