@@ -681,7 +681,7 @@ h3 {
     height: 100%;
     display: block;
     object-fit: contain;
-    background: #081318;
+    background: transparent;
 }
 
 .standalone-video-trigger {
@@ -692,7 +692,10 @@ h3 {
     padding: 0;
     border: 0;
     color: inherit;
-    background: #081318;
+    background:
+        linear-gradient(115deg, rgba(83, 151, 88, 0.58), transparent 34%),
+        linear-gradient(245deg, rgba(142, 210, 154, 0.62), transparent 36%),
+        linear-gradient(135deg, #dff5e7, #ecfbff 54%, #d6f0de);
     cursor: zoom-in;
 }
 
